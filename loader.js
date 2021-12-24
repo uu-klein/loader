@@ -3,15 +3,23 @@ const translate = require("@vitalets/google-translate-api");
 module.exports = function(source) {
   const callback = this.async();
 
-  let reg = /[\u4e00-\u9fa5]+/g;
+  const compose = (...fun) =>
+    fun.reduceRight((a, b) => (...args) => a(b(...args)));
 
-  let match = source.match(reg);
+  const matchFn = val => {
+    let reg = /[\u4e00-\u9fa5]+/g;
 
-  if (match !== null && match !== "null") {
-    let str = match.join(",");
+    let match = val.match(reg);
 
-    if (str !== null) {
-      translate(str, {
+    if (match !== null && match !== "null") {
+      let str = match.join(",");
+      return str;
+    }
+  };
+
+  const translateFn = val => {
+    if (val !== null) {
+      translate(val, {
         to: "vi"
       })
         .then(res => {
@@ -19,7 +27,7 @@ module.exports = function(source) {
 
           let newRes = res.text.replace(regRes, "").split(/, */);
 
-          let newArr = str.split(/, */);
+          let newArr = val.split(/, */);
 
           for (let index = 0; index < newArr.length; index++) {
             let res = `${newRes[index]}`;
@@ -34,5 +42,10 @@ module.exports = function(source) {
           console.error(err);
         });
     }
-  }
+  };
+
+  const fn = compose(matchFn, translateFn);
+
+  fn(source);
+
 };
